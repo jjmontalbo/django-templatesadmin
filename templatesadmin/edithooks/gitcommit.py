@@ -6,6 +6,7 @@ from templatesadmin.edithooks import TemplatesAdminHook
 import subprocess
 import os
 
+
 class GitCommitHook(TemplatesAdminHook):
     '''
     Commit to git after saving
@@ -27,9 +28,9 @@ class GitCommitHook(TemplatesAdminHook):
             'GIT_AUTHOR_NAME="%(author)s" GIT_AUTHOR_EMAIL="%(email)s" '
             'git commit -F - -- %(file)s'
         ) % {
-          'file': template_path,
-          'author': author,
-          'email': request.user.email,
+            'file': template_path,
+            'author': author,
+            'email': request.user.email,
         }
 
         # Stolen from gitpython's git/cmd.py
@@ -58,8 +59,6 @@ class GitCommitHook(TemplatesAdminHook):
 
     @classmethod
     def contribute_to_form(cls, template_path):
-        return dict(commitmessage=forms.CharField(
-            widget=forms.TextInput(attrs={'size':'100'}),
-            label = _('Change message'),
-            required = False,
-        ))
+        return dict(commitmessage=forms.CharField(widget=forms.TextInput(attrs={'size': '100'}),
+                                                  label=_('Change message'),
+                                                  required=False))

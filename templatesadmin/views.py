@@ -6,6 +6,7 @@ from re import search
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
@@ -19,30 +20,19 @@ from django.views.decorators.cache import never_cache
 from templatesadmin.forms import TemplateForm
 from templatesadmin import TemplatesAdminException
 
+
 # Default settings that may be overriden by global settings (settings.py)
-TEMPLATESADMIN_VALID_FILE_EXTENSIONS = getattr(
-    settings,
-    'TEMPLATESADMIN_VALID_FILE_EXTENSIONS',
-    ('html', 'htm', 'txt', 'css', 'backup',)
-)
+TEMPLATESADMIN_VALID_FILE_EXTENSIONS = getattr(settings, 'TEMPLATESADMIN_VALID_FILE_EXTENSIONS', (
+    'html', 'htm', 'txt', 'css', 'backup', 'ejs'
+))
 
-TEMPLATESADMIN_GROUP = getattr(
-    settings,
-    'TEMPLATESADMIN_GROUP',
-    'TemplateAdmins'
-)
+TEMPLATESADMIN_GROUP = getattr(settings, 'TEMPLATESADMIN_GROUP', 'TemplateAdmins')
 
-TEMPLATESADMIN_EDITHOOKS = getattr(
-    settings,
-    'TEMPLATESADMIN_EDITHOOKS',
-    ('templatesadmin.edithooks.dotbackupfiles.DotBackupFilesHook', )
-)
+TEMPLATESADMIN_HIDE_READONLY = getattr(settings, 'TEMPLATESADMIN_HIDE_READONLY', False)
 
-TEMPLATESADMIN_HIDE_READONLY = getattr(
-    settings,
-    'TEMPLATESADMIN_HIDE_READONLY',
-    False
-)
+TEMPLATESADMIN_EDITHOOKS = getattr(settings, 'TEMPLATESADMIN_EDITHOOKS', (
+    'templatesadmin.edithooks.dotbackupfiles.DotBackupFilesHook',
+))
 
 if str == type(TEMPLATESADMIN_EDITHOOKS):
     TEMPLATESADMIN_EDITHOOKS = (TEMPLATESADMIN_EDITHOOKS,)
@@ -71,12 +61,13 @@ _fixpath = lambda path: os.path.abspath(os.path.normpath(path))
 TEMPLATESADMIN_TEMPLATE_DIRS = getattr(
     settings,
     'TEMPLATESADMIN_TEMPLATE_DIRS', [
-        d for d in list(settings.TEMPLATE_DIRS) + \
+        d for d in list(settings.TEMPLATE_DIRS) +
         list(app_template_dirs) if os.path.isdir(d)
     ]
 )
 
 TEMPLATESADMIN_TEMPLATE_DIRS = [_fixpath(dir) for dir in TEMPLATESADMIN_TEMPLATE_DIRS]
+
 
 def user_in_templatesadmin_group(user):
     try:
@@ -85,45 +76,45 @@ def user_in_templatesadmin_group(user):
     except ObjectDoesNotExist:
         return False
 
+
 @never_cache
 @user_passes_test(lambda u: user_in_templatesadmin_group(u))
 @login_required
 def listing(request,
-             template_name='templatesadmin/overview.html',
-             available_template_dirs=TEMPLATESADMIN_TEMPLATE_DIRS):
+            template_name='templatesadmin/overview.html',
+            available_template_dirs=TEMPLATESADMIN_TEMPLATE_DIRS):
 
     template_dict = []
     for templatedir in available_template_dirs:
         for root, dirs, files in os.walk(templatedir):
-            for f in sorted([f for f in files if f.rsplit('.')[-1] \
-                      in TEMPLATESADMIN_VALID_FILE_EXTENSIONS]):
+            for f in sorted([f for f in files if f.rsplit('.')[-1] in TEMPLATESADMIN_VALID_FILE_EXTENSIONS]):
                 full_path = os.path.join(root, f)
                 l = {
-                     'templatedir': templatedir,
-                     'rootpath': root,
-                     'abspath': full_path,
-                     'modified': datetime.fromtimestamp(os.stat(full_path)[ST_MTIME]),
-                     'created': datetime.fromtimestamp(os.stat(full_path)[ST_CTIME]),
-                     'writeable': os.access(full_path, os.W_OK)
+                    'templatedir': templatedir,
+                    'rootpath': root,
+                    'abspath': full_path,
+                    'modified': datetime.fromtimestamp(os.stat(full_path)[ST_MTIME]),
+                    'created': datetime.fromtimestamp(os.stat(full_path)[ST_CTIME]),
+                    'writeable': os.access(full_path, os.W_OK)
                 }
 
                 # Do not fetch non-writeable templates if settings set.
-                if (TEMPLATESADMIN_HIDE_READONLY == True and \
-                    l['writeable'] == True) or \
-                   TEMPLATESADMIN_HIDE_READONLY == False:
+                if (TEMPLATESADMIN_HIDE_READONLY is True and l['writeable'] is True) or TEMPLATESADMIN_HIDE_READONLY is False:
                     try:
                         template_dict += (l,)
                     except KeyError:
                         template_dict = (l,)
 
     template_context = {
-        'messages': request.user.get_and_delete_messages(),
+        'messages': messages.get_messages(request),
         'template_dict': template_dict,
-        'ADMIN_MEDIA_PREFIX': settings.ADMIN_MEDIA_PREFIX,
+        # 'ADMIN_MEDIA_PREFIX': settings.ADMIN_MEDIA_PREFIX,
     }
 
     return render_to_response(template_name, template_context,
                               RequestContext(request))
+
+
 @never_cache
 @user_passes_test(lambda u: user_in_templatesadmin_group(u))
 @login_required
@@ -213,16 +204,17 @@ def modify(request,
         )
 
     template_context = {
-        'messages': request.user.get_and_delete_messages(),
+        'messages': messages.get_messages(request),
         'form': form,
         'short_path': path,
         'template_path': path,
         'template_writeable': os.access(template_path, os.W_OK),
-        'ADMIN_MEDIA_PREFIX': settings.ADMIN_MEDIA_PREFIX,
+        # 'ADMIN_MEDIA_PREFIX': settings.ADMIN_MEDIA_PREFIX,
     }
 
     return render_to_response(template_name, template_context,
                               RequestContext(request))
+
 
 # For backwards compatibility and secure out-of-the-box views
 overview = user_passes_test(lambda u: user_in_templatesadmin_group(u))(login_required(listing))

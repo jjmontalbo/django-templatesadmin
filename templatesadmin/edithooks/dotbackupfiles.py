@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from templatesadmin.edithooks import TemplatesAdminHook
 from templatesadmin import TemplatesAdminException
 
+
 class DotBackupFilesHook(TemplatesAdminHook):
     '''
     Backup File before saving
@@ -32,7 +33,6 @@ class DotBackupFilesHook(TemplatesAdminHook):
 
     @classmethod
     def contribute_to_form(cls, template_path):
-        return dict(backup=forms.BooleanField(
-            label = _('Backup file before saving?'),
-            required = False,
-        ))
+        return {
+            'backup': forms.BooleanField(label=_('Backup file before saving?'), required=False)
+        }
