@@ -128,7 +128,7 @@ def modify(request,
 
     # Check if file is within template-dirs
     if not any([template_path.startswith(templatedir) for templatedir in available_template_dirs]):
-        request.user.message_set.create(message=_('Sorry, that file is not available for editing.'))
+        messages.warning(request, _('Sorry, that file is not available for editing.'))
         return HttpResponseRedirect(reverse('templatesadmin-overview'))
 
     if request.method == 'POST':
@@ -144,9 +144,9 @@ def modify(request,
                 for hook in TEMPLATESADMIN_EDITHOOKS:
                     pre_save_notice = hook.pre_save(request, form, template_path)
                     if pre_save_notice:
-                        request.user.message_set.create(message=pre_save_notice)
+                        messages.warning(request, pre_save_notice)
             except TemplatesAdminException, e:
-                request.user.message_set.create(message=e.message)
+                messages.error(request, e.message)
                 return HttpResponseRedirect(request.build_absolute_uri())
 
             # Save the template
@@ -171,26 +171,22 @@ def modify(request,
                 f.write(content)
                 f.close()
             except IOError, e:
-                request.user.message_set.create(
-                    message=_('Template "%(path)s" has not been saved! Reason: %(errormsg)s' % {
-                        'path': path,
-                        'errormsg': e
-                    })
-                )
+                messages.success(request, _('Template "%(path)s" has not been saved! Reason: %(errormsg)s' % {
+                    'path': path,
+                    'errormsg': e
+                }))
                 return HttpResponseRedirect(request.build_absolute_uri())
 
             try:
                 for hook in TEMPLATESADMIN_EDITHOOKS:
                     post_save_notice = hook.post_save(request, form, template_path)
                     if post_save_notice:
-                        request.user.message_set.create(message=post_save_notice)
+                        messages.warning(request, post_save_notice)
             except TemplatesAdminException, e:
-                request.user.message_set.create(message=e.message)
+                messages.error(request, e.message)
                 return HttpResponseRedirect(request.build_absolute_uri())
 
-            request.user.message_set.create(
-                message=_('Template "%s" was saved successfully.' % path)
-            )
+            messages.success(request, _('Template "%s" was saved successfully.' % path))
             return HttpResponseRedirect(reverse('templatesadmin-overview'))
     else:
         template_file = codecs.open(template_path, 'r', 'utf-8').read()
