@@ -1,6 +1,7 @@
 {% extends "templatesadmin/base.html" %}
 
-{% load i18n admin_modify adminmedia %}
+{% load url from future %}
+{% load i18n admin_modify %}
 {% load templatesadmin_tags %}
 
 {% block extrahead %}
@@ -23,8 +24,8 @@
 
 {% block breadcrumbs %}
 <div class="breadcrumbs">
-    <a href="{% url templatesadmin-overview %}">{% trans "Home" %}</a> &rsaquo;
-    <a href="{% url templatesadmin-overview %}">{% trans "File selection" %}</a> &rsaquo;
+    <a href="{% url 'templatesadmin-overview' %}">{% trans "Home" %}</a> &rsaquo;
+    <a href="{% url 'templatesadmin-overview' %}">{% trans "File selection" %}</a> &rsaquo;
     {{ template_path }}
 </div>
 {% endblock %}
